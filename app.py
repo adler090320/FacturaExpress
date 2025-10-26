@@ -15,12 +15,12 @@ def create_app():
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///facturacion.db'
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-    # 2. DATOS DE LA EMPRESA (CORREGIDOS)
+    # 2. DATOS DE LA EMPRESA
     app.config['EMPRESA_NOMBRE'] = 'ADLER GRANDEZ P.'
     app.config['EMPRESA_DIRECCION'] = 'ELIAS SOPLIN VARGAS'
     app.config['EMPRESA_TELEFONO'] = '+51 929 974 627'
     app.config['EMPRESA_CORREO'] = 'A76047901@GMAIL.COM'
-    app.config['EMPRESA_RUC'] = '1076047901' # <-- ¡NUEVO CAMPO CON RUC CORREGIDO!
+    app.config['EMPRESA_RUC'] = '1076047901' # RUC CORREGIDO
     
     # 3. INICIALIZACIÓN DE EXTENSIONES
     db.init_app(app)
@@ -39,9 +39,15 @@ def create_app():
 
     return app
 
+# ---------------------------------------------------------------------
+# LÍNEA CLAVE PARA RENDER/GUNICORN: 
+# Gunicorn busca esta variable 'app' en el nivel superior para iniciar la aplicación.
+# ---------------------------------------------------------------------
+app = create_app()
+
+
 if __name__ == '__main__':
-    app = create_app()
-    
+    # Este bloque solo se ejecuta cuando corres python app.py localmente.
     with app.app_context():
         # Crea todas las tablas en SQLite y el usuario administrador si no existe
         db.create_all() 
