@@ -1,0 +1,202 @@
+{% extends "base.html" %}
+
+{% block title %}Detalle de {{ documento.tipo }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        
+        <div class="d-flex justify-content-between align-items-center mb-4 print-hide">
+            <h1>Detalle de {{ documento.tipo }}</h1>
+            <div>
+                {% if not documento.anulado %}
+                <button type="button" class="btn btn-danger me-2" data-bs-toggle="modal" data-bs-target="#anularModal">
+                    Anular Venta
+                </button>
+                {% endif %}
+                <button onclick="window.print()" class="btn btn-primary me-2">
+                    <i class="fas fa-print"></i> Imprimir / Descargar PDF
+                </button>
+                <a href="{{ url_for('main.documentos_index') }}" class="btn btn-secondary">Volver al Historial</a>
+            </div>
+        </div>
+        <hr class="print-hide">
+
+        {% if documento.anulado %}
+        <div class="alert alert-danger text-center mb-4">
+            <strong>DOCUMENTO ANULADO</strong>
+            <p class="mb-0">Motivo: {{ documento.motivo_anulacion }} (Anulado por: {{ empleado.username }} el {{ documento.fecha_anulacion.strftime('%d/%m/%Y') }})</p>
+        </div>
+        {% endif %}
+        
+        <div class="boleta-container">
+            
+            <table class="header-table" width="100%">
+                <tr>
+                    <td style="width: 70%; vertical-align: top;">
+                        <div class="company-info">
+                            <h2 style="margin: 0;">{{ empresa.nombre }}</h2>
+                            <p style="margin: 0; font-size: 0.9em;">Datos de la Empresa</p>
+                            <p style="margin: 0; font-size: 0.9em;">Dir: {{ empresa.direccion }}</p>
+                            <p style="margin: 0; font-size: 0.9em;">Teléfono: {{ empresa.telefono }}</p>
+                        </div>
+                    </td>
+                    <td style="width: 30%; text-align: center; border: 2px solid #333;">
+                        <div style="padding: 5px;">
+                            <strong style="font-size: 1.1em;">R.U.C. 10760479018</strong>
+                            <div style="font-size: 1.2em; border-top: 1px solid #333; margin-top: 5px; padding-top: 5px;">
+                                {{ documento.tipo | upper }} N°
+                                <p style="font-size: 1.5em; margin: 5px 0 0;">{{ documento.numero_documento }}</p>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+            </table>
+
+            <table class="date-client-table" width="100%" style="margin-top: 15px;">
+                <tr>
+                    <td colspan="2" style="padding-bottom: 5px; border-bottom: 1px dashed #666;">
+                        <strong style="margin-right: 10px;">Señor(es):</strong> {{ cliente.nombre }}
+                    </td>
+                    <td colspan="1" style="width: 20%; text-align: center; border-bottom: 1px dashed #666;">
+                        <strong style="margin-right: 10px;">RUC/DNI:</strong> {{ cliente.ruc_dni }}
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="3" style="padding-top: 5px;">
+                        <strong style="margin-right: 10px;">Dirección:</strong> {{ cliente.direccion or 'N/A' }}
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="3" style="padding-top: 5px; text-align: right; font-size: 0.9em;">
+                        **Fecha:** {{ documento.fecha_emision.strftime('%d/%m/%Y') }}
+                    </td>
+                </tr>
+            </table>
+
+            <table class="items-table" width="100%" cellspacing="0" cellpadding="5" style="margin-top: 15px; border: 1px solid #333;">
+                <thead>
+                    <tr style="background-color: #f0f0f0;">
+                        <th style="width: 10%; border-right: 1px solid #333;">CANT.</th>
+                        <th style="width: 50%; border-right: 1px solid #333;">DESCRIPCION</th>
+                        <th style="width: 20%; border-right: 1px solid #333; text-align: right;">P. UNIT.</th>
+                        <th style="width: 20%; text-align: right;">IMPORTE</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for detalle in detalles %}
+                    <tr>
+                        <td style="border-right: 1px solid #333; border-top: 1px solid #333; text-align: center;">{{ detalle.cantidad }}</td>
+                        <td style="border-right: 1px solid #333; border-top: 1px solid #333;">{{ detalle.nombre }}</td>
+                        <td style="border-right: 1px solid #333; border-top: 1px solid #333; text-align: right;">S/. {{ "{:,.2f}".format(detalle.precio_unitario) }}</td>
+                        <td style="border-top: 1px solid #333; text-align: right;">S/. {{ "{:,.2f}".format(detalle.total_linea) }}</td>
+                    </tr>
+                    {% endfor %}
+                    
+                    {% for i in range(5 - detalles|length) %}
+                    <tr style="height: 25px;">
+                        <td style="border-right: 1px solid #333; border-top: 1px solid #333;"></td>
+                        <td style="border-right: 1px solid #333; border-top: 1px solid #333;"></td>
+                        <td style="border-right: 1px solid #333; border-top: 1px solid #333;"></td>
+                        <td style="border-top: 1px solid #333;"></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <table class="footer-table" width="100%" style="margin-top: 10px;">
+                <tr>
+                    <td style="width: 75%; font-size: 0.85em; vertical-align: top;">
+                        <p style="margin: 0;">Atendido por: {{ empleado.username }}</p>
+                        <p style="margin: 5px 0 0;">¡GRACIAS POR SU PREFERENCIA!</p>
+                    </td>
+                    <td style="width: 25%; text-align: right; border: 1px solid #333;">
+                        <div style="padding: 5px;">
+                            <p style="margin: 0; font-size: 0.9em;">Subtotal: S/. {{ "{:,.2f}".format(documento.subtotal) }}</p>
+                            <p style="margin: 0; font-size: 0.9em;">IGV (18%): S/. {{ "{:,.2f}".format(documento.impuestos) }}</p>
+                            <hr style="border-top: 1px solid #333; margin: 3px 0;">
+                            <strong style="font-size: 1.1em;">TOTAL S/. {{ "{:,.2f}".format(documento.total) }}</strong>
+                        </div>
+                    </td>
+                </tr>
+            </table>
+        </div> </div>
+</div>
+
+{% if not documento.anulado %}
+<div class="modal fade" id="anularModal" tabindex="-1" aria-labelledby="anularModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="anularModalLabel">Anular Documento N° {{ documento.numero_documento }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" action="{{ url_for('main.anular_documento', documento_id=documento.id) }}">
+                <div class="modal-body">
+                    <p>Por favor, especifique la razón o el motivo de la anulación:</p>
+                    <textarea name="motivo_anulacion" class="form-control" rows="3" required></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-danger">Confirmar Anulación</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<style>
+/* Estilos generales de la boleta */
+.boleta-container {
+    max-width: 800px; /* Ancho máximo para la boleta */
+    margin: 20px auto;
+    padding: 10px;
+    font-family: Arial, sans-serif;
+    color: #333;
+    background-color: white;
+}
+.header-table td, .date-client-table td {
+    padding: 0;
+}
+.items-table th {
+    font-size: 0.9em;
+    text-transform: uppercase;
+}
+.items-table td {
+    font-size: 0.9em;
+}
+
+/* Ocultar botones y elementos de UI en pantalla */
+.print-hide {
+    display: flex;
+}
+
+/* Estilos de impresión */
+@media print {
+    /* Ocultar elementos de la interfaz de usuario */
+    .navbar, 
+    .print-hide,
+    .d-flex.justify-content-between.align-items-center.mb-4 {
+        display: none !important;
+    }
+    
+    /* Configuración de la página impresa */
+    body {
+        margin: 0;
+        padding: 0;
+    }
+    .container {
+        max-width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+    .boleta-container {
+        max-width: 100%;
+        margin: 0;
+        padding: 0;
+        border: none;
+    }
+}
+</style>
+{% endblock %}

@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard | FacturaExpress{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">Dashboard Principal</h1>
+        <p class="lead">Bienvenido/a, <strong>{{ username }}</strong>. Selecciona una acción:</p>
+        <hr>
+    </div>
+</div>
+
+<div class="row">
+    
+    <div class="col-md-4 mb-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title">¡Crear Documento!</h5>
+                <p class="card-text">Genera una nueva Factura o Boleta.</p>
+                <a href="{{ url_for('main.crear_documento') }}" class="btn btn-success">Nueva Factura/Boleta</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title">Clientes</h5>
+                <p class="card-text">Administra la información de tus clientes.</p>
+                <a href="{{ url_for('main.clientes_index') }}" class="btn btn-primary">Ir a Clientes</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4 mb-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title">Productos</h5>
+                <p class="card-text">Administra tu inventario de productos y servicios.</p>
+                <a href="{{ url_for('main.productos_index') }}" class="btn btn-warning">Ir a Productos</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title">Historial y Reportes</h5>
+                <p class="card-text">Ver todas las facturas y boletas emitidas.</p>
+                <a href="{{ url_for('main.documentos_index') }}" class="btn btn-info">Ver Historial</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,220 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1>{{ title }}</h1>
+        <hr>
+    </div>
+</div>
+
+<form method="POST" id="documentoForm" action="{{ url_for('main.crear_documento') }}">
+    
+    <div class="card mb-4">
+        <div class="card-header">Datos del Documento</div>
+        <div class="card-body row">
+            <div class="mb-3 col-md-4">
+                <label for="tipo_documento" class="form-label">Tipo de Documento</label>
+                <select class="form-select" id="tipo_documento" name="tipo_documento" required>
+                    <option value="Boleta">Boleta</option>
+                    <option value="Factura">Factura</option>
+                </select>
+            </div>
+            
+            <div class="mb-3 col-md-4">
+                <label for="cliente_id" class="form-label">Cliente</label>
+                <select class="form-select" id="cliente_id" name="cliente_id" required>
+                    <option value="">Seleccione un Cliente...</option>
+                    {% for cliente in clientes %}
+                    <option value="{{ cliente.id }}">
+                        {{ cliente.nombre }} ({{ cliente.ruc_dni }})
+                    </option>
+                    {% endfor %}
+                </select>
+                {% if not clientes %}
+                    <small class="text-danger">Primero <a href="{{ url_for('main.crear_cliente') }}">registra un cliente</a>.</small>
+                {% endif %}
+            </div>
+            
+            <div class="mb-3 col-md-4 d-flex align-items-end">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="usar_igv" name="usar_igv" checked>
+                    <label class="form-check-label" for="usar_igv">
+                        Aplicar Impuesto (18% - IGV)
+                    </label>
+                </div>
+            </div>
+            
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between">
+            Detalle de Items
+            <button type="button" class="btn btn-sm btn-primary" id="addItemBtn">
+                + Agregar Producto/Servicio
+            </button>
+        </div>
+        <div class="card-body">
+            
+            <table class="table" id="itemsTable">
+                <thead>
+                    <tr>
+                        <th>Producto</th>
+                        <th style="width: 15%;">Precio Unitario</th>
+                        <th style="width: 10%;">Cantidad</th>
+                        <th style="width: 15%;">Total</th>
+                        <th style="width: 5%;"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    </tbody>
+            </table>
+            
+            <hr>
+            
+            <div class="row justify-content-end">
+                <div class="col-md-4">
+                    <p>Subtotal: <strong id="displaySubtotal">S/. 0.00</strong></p>
+                    <p>Impuestos (18%): <strong id="displayImpuestos">S/. 0.00</strong></p>
+                    <h4>Total: <strong id="displayTotal">S/. 0.00</strong></h4>
+                </div>
+            </div>
+            
+        </div>
+    </div>
+
+    <div class="d-grid gap-2">
+        <button type="submit" class="btn btn-success btn-lg" id="submitBtn">
+            Generar y Guardar Documento
+        </button>
+    </div>
+
+</form>
+
+<script>
+    // Variables de configuración de JavaScript
+    const PRODUCTOS = [
+        {% for producto in productos %}
+        { 
+            id: {{ producto.id }}, 
+            nombre: {{ producto.nombre | tojson | safe }}, 
+            precio: {{ "{:.2f}".format(producto.precio_unitario) }} 
+        }{% if not loop.last %},{% endif %}
+        {% endfor %}
+    ];
+    const IMPUESTO_PORCENTAJE = 0.18; 
+    let itemCount = 0;
+    
+    document.addEventListener('DOMContentLoaded', () => {
+        const tableBody = document.querySelector('#itemsTable tbody');
+        const addItemBtn = document.getElementById('addItemBtn');
+        const usarIgvCheckbox = document.getElementById('usar_igv'); // Obtener el checkbox
+
+        // Función para agregar una fila de item (igual que antes)
+        const addItemRow = () => {
+            // ... (código igual que antes)
+            if (PRODUCTOS.length === 0) {
+                alert("Debes registrar productos antes de crear un documento.");
+                return;
+            }
+            itemCount++;
+            
+            const row = tableBody.insertRow();
+            row.id = `row-${itemCount}`;
+            row.innerHTML = `
+                <td>
+                    <select name="item_producto_id[]" class="form-select product-select" data-row-id="${itemCount}" required>
+                        <option value="">Seleccionar...</option>
+                        ${PRODUCTOS.map(p => `<option value="${p.id}" data-precio="${p.precio}">${p.nombre}</option>`).join('')}
+                    </select>
+                </td>
+                <td>
+                    <input type="number" class="form-control price-input" value="0.00" step="0.01" min="0" readonly data-row-id="${itemCount}">
+                </td>
+                <td>
+                    <input type="number" name="item_cantidad[]" class="form-control quantity-input" value="1" min="1" required data-row-id="${itemCount}">
+                </td>
+                <td>
+                    <input type="text" class="form-control total-input" value="0.00" readonly data-row-id="${itemCount}">
+                </td>
+                <td>
+                    <button type="button" class="btn btn-sm btn-danger remove-item-btn" data-row-id="${itemCount}">X</button>
+                </td>
+            `;
+
+            row.querySelector('.product-select').addEventListener('change', updateRow);
+            row.querySelector('.quantity-input').addEventListener('input', updateRow);
+            row.querySelector('.remove-item-btn').addEventListener('click', removeRow);
+            
+            updateRow({ target: row.querySelector('.product-select') }); 
+        };
+
+        // Función para actualizar los totales de una fila (igual que antes)
+        const updateRow = (e) => {
+            const rowId = e.target.getAttribute('data-row-id');
+            const row = document.getElementById(`row-${rowId}`);
+            if (!row) return;
+            const select = row.querySelector('.product-select');
+            const priceInput = row.querySelector('.price-input');
+            const quantityInput = row.querySelector('.quantity-input');
+            const totalInput = row.querySelector('.total-input');
+            const selectedOption = select.options[select.selectedIndex];
+            
+            let precio = 0;
+            if(selectedOption.value) {
+                precio = parseFloat(selectedOption.getAttribute('data-precio'));
+            }
+            
+            priceInput.value = precio.toFixed(2);
+            const cantidad = parseInt(quantityInput.value) || 0;
+            const totalLinea = precio * cantidad;
+            totalInput.value = totalLinea.toFixed(2);
+            calculateTotals();
+        };
+
+        // Función para eliminar una fila (igual que antes)
+        const removeRow = (e) => {
+            const rowId = e.target.getAttribute('data-row-id');
+            const row = document.getElementById(`row-${rowId}`);
+            if (row) {
+                row.remove();
+                calculateTotals();
+            }
+        };
+        
+        // Función principal para calcular el subtotal, impuesto y total general (ACTUALIZADA PARA IGV)
+        const calculateTotals = () => {
+            let subtotal = 0;
+            document.querySelectorAll('.total-input').forEach(input => {
+                subtotal += parseFloat(input.value) || 0;
+            });
+            
+            const usarIgv = usarIgvCheckbox.checked; // Leer el estado del checkbox
+            
+            let impuestos = 0;
+            if (usarIgv) {
+                impuestos = subtotal * IMPUESTO_PORCENTAJE;
+            }
+            
+            const total = subtotal + impuestos;
+            
+            // Actualizar la vista (con símbolo S/.)
+            document.getElementById('displaySubtotal').textContent = `S/. ${subtotal.toFixed(2)}`;
+            document.getElementById('displayImpuestos').textContent = `S/. ${impuestos.toFixed(2)}`;
+            document.getElementById('displayTotal').textContent = `S/. ${total.toFixed(2)}`;
+        };
+
+        // Evento para el checkbox IGV (NUEVO)
+        usarIgvCheckbox.addEventListener('change', calculateTotals);
+
+        // Evento del botón de agregar item
+        addItemBtn.addEventListener('click', addItemRow);
+        
+        // Iniciar con una fila vacía
+        addItemRow(); 
+    });
+</script>
+{% endblock %}

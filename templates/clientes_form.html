@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <h1>{{ title }}</h1>
+        <hr>
+        
+        <form method="POST" action="{% if cliente %}{{ url_for('main.editar_cliente', cliente_id=cliente.id) }}{% else %}{{ url_for('main.crear_cliente') }}{% endif %}">
+            
+            <div class="mb-3">
+                <label for="nombre" class="form-label">Nombre o Razón Social</label>
+                <input type="text" class="form-control" id="nombre" name="nombre" value="{{ cliente.nombre if cliente else '' }}" required>
+            </div>
+            
+            <div class="mb-3">
+                <label for="ruc_dni" class="form-label">RUC/DNI</label>
+                <input type="text" class="form-control" id="ruc_dni" name="ruc_dni" value="{{ cliente.ruc_dni if cliente else '' }}" required>
+            </div>
+            
+            <div class="mb-3">
+                <label for="direccion" class="form-label">Dirección (Opcional)</label>
+                <input type="text" class="form-control" id="direccion" name="direccion" value="{{ cliente.direccion if cliente else '' }}">
+            </div>
+
+            <div class="d-flex justify-content-between">
+                <a href="{{ url_for('main.clientes_index') }}" class="btn btn-secondary">Cancelar y Volver</a>
+                <button type="submit" class="btn btn-primary">
+                    {% if cliente %}Guardar Cambios{% else %}Registrar Cliente{% endif %}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
